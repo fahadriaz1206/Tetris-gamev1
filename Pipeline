@@ -52,7 +52,7 @@ pipeline{
         stage("Docker Build & Push"){
             steps{
                 script{
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){   
+                   withDockerRegistry(credentialsId: 'dockerhub', toolName: 'docker'){   
                        sh "docker build -t tetrisv1 ."
                        sh "docker tag tetrisv1 fahad1206/tetrisv1:latest "
                        sh "docker push fahad1206/tetrisv1:latest "
@@ -62,7 +62,7 @@ pipeline{
         }
         stage("TRIVY"){
             steps{
-                sh "trivy image aakibkhan1212/tetrisv1:latest > trivyimage.txt" 
+                sh "trivy image fahad1206/tetrisv1:latest > trivyimage.txt" 
             }
         }
     }
