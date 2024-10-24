@@ -22,7 +22,7 @@ pipeline{
             steps{
                 withSonarQubeEnv('sonar-server') {
                     sh '''
-                        sonar-scanner \
+                        $SCANNER_HOME/bin/sonar-scanner \
                         -Dsonar.projectKey=tetris \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=http://18.183.174.166:9000 \
