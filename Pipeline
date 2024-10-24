@@ -5,7 +5,9 @@ pipeline{
         nodejs 'node16'
     }
     environment {
-        SCANNER_HOME = tool 'sonar-scanner'
+        SCANNER_HOME=tool 'sonar-scanner'
+        GIT_REPO_NAME = "Tetris-deployment-file"
+        GIT_USER_NAME = "fahadriaz1206"      
     }
     stages {
         stage('clean workspace'){
@@ -21,23 +23,15 @@ pipeline{
         stage("Sonarqube Analysis "){
             steps{
                 withSonarQubeEnv('sonar-server') {
-                    // sh '''
-                    //     $SCANNER_HOME/bin/sonar-scanner \
-                    //     -Dsonar.projectKey=tetris \
-                    //     -Dsonar.sources=. \
-                    //     -Dsonar.host.url=http://18.183.174.166:9000 \
-                    //     -Dsonar.login=sqp_5dd93550a9a44aece2622d6e7882927ebd646cee
-                    // '''
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=TetrisVersion1.0 \
-                    -Dsonar.projectKey=TetrisVersion1.0
-                    '''
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=tetrisv1 \
+                    -Dsonar.projectKey=tetrisv1 '''
                 }
             }
         }
         stage("quality gate"){
            steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
+                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token' 
                 }
             } 
         }
@@ -48,7 +42,7 @@ pipeline{
         }
         stage('OWASP FS SCAN') {
             steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', nvdCredentialsId: 'nvd-api-key', odcInstallation: 'DP-Check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
@@ -71,6 +65,24 @@ pipeline{
         stage("TRIVY"){
             steps{
                 sh "trivy image fahad1206/tetrisv1:latest > trivyimage.txt" 
+            }
+        }
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/fahadriaz1206/Tetris-deployment-file.git'
+            }
+        }
+        stage('Update Deployment File') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+                       NEW_IMAGE_NAME = "fahad1206/tetrisv1:latest"  
+                       sh "sed -i 's|image: .*|image: $NEW_IMAGE_NAME|' deployment.yml"
+                       sh 'git add deployment.yml'
+                       sh "git commit -m 'Update deployment image to $NEW_IMAGE_NAME'"
+                       sh "git push @github.com/${GIT_USER_NAME}/${GIT_REPO_NAME">https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main"
+                    }
+                }
             }
         }
     }
