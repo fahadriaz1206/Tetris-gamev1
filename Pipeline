@@ -76,7 +76,17 @@ pipeline{
             steps {
                 script {
                     withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
-                       NEW_IMAGE_NAME = "fahad1206/tetrisv1:latest"  
+                       NEW_IMAGE_NAME = "fahad1206/tetrisv1:latest"
+                       
+                       // Ignore untracked files
+                       sh 'echo ".scannerwork/" >> .gitignore'
+                       sh 'echo "node_modules/" >> .gitignore'
+                       sh 'echo "trivyfs.txt" >> .gitignore'
+                       sh 'echo "trivyimage.txt" >> .gitignore'
+                        
+                        // Add changes to .gitignore
+                       sh 'git add .gitignore'
+                       
                        sh "sed -i 's|image: .*|image: $NEW_IMAGE_NAME|' deployment.yml"
                        sh 'git add deployment.yml'
                        sh "git commit -m 'Update deployment image to $NEW_IMAGE_NAME'"
